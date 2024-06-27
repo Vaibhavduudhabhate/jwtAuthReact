@@ -50,7 +50,6 @@ const Registration = () => {
           Login
         </button>
         </div> 
-
     </div>
   )
 }

@@ -10,7 +10,7 @@ const Registration = () => {
 
   const handleSubmit = (e) =>{
     e.preventDefault();
-    axios.post('http://localhost:3001/register',{name,email,password})
+    axios.post('http://localhost:3002/register',{name,email,password})
     // .then(res=>console.log(res.data))
     .then(res =>{
       navigate('/login')

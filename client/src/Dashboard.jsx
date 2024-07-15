@@ -7,7 +7,7 @@ const Dashboard = () => {
     const nevigate = useNavigate()
     axios.defaults.withCredentials = true;
     useEffect(()=>{
-        axios.get('http://localhost:3001/dashboard')
+        axios.get('http://localhost:3002/dashboard')
         .then(res=>{
             // console.log(res);
             if(res.data.valid){
@@ -24,4 +24,4 @@ const Dashboard = () => {
   )
 }
 
-export default Dashboard
+export default Dashboard;

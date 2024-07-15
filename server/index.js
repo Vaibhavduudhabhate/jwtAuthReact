@@ -4,6 +4,11 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import studentModel from "./model/studentModel.js"
+import productModel from "./model/productModel.js";
+import nodemailer from 'nodemailer';
+import crypto from 'crypto'
+
+const jwt_secret = 'jsknkjfdkjshdkfjhs'
 
 const app = express();
 app.use(cookieParser())
@@ -24,6 +29,108 @@ connectMongoDb('mongodb+srv://admin:admin1234@cluster0.w3huoar.mongodb.net/pract
 export default{
     connectMongoDb,
 }
+
+
+const emailUser = process.env.EMAIL_USER;
+const emailPass = process.env.EMAIL_PASS;
+
+app.post('/forgotPassword',async(req,res)=>{
+    const email = req.body.email;
+    // console.log(req.body.email ,email)
+    try {
+        const olduser = await studentModel.findOne({email});
+        console.log(olduser)
+        if(!olduser){
+            return res.json({status:"user not exists"})
+        }
+        const secret = jwt_secret + olduser.password;
+        const token = jwt.sign({email : olduser.email ,id:olduser._id},secret,{expiresIn : '5m'});
+        const link = `http://localhost:3002/resetPassword/${olduser._id}/${token}`;
+        console.log('link',link)
+        res.send(link)
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+app.get("/resetPassword/:id/:token",async(req,res)=>{
+    const {id,token} = req.params;
+    // console.log(req.params);
+    const olduser = await studentModel.findOne({_id : id});
+        console.log(olduser)
+        if(!olduser){
+            return res.json({status:"user not exists"})
+        }
+        const secret = jwt_secret + olduser.password;
+        try {
+            const verify = jwt.verify(token,secret)
+            res.send("verified")
+        } catch (error) {
+            res.send('not Verified')
+        }
+    // res.send('done')
+})
+
+// const transporter = nodemailer.createTransport({
+//     service: 'gmail',
+//     auth: {
+//       user: emailUser,
+//       pass: emailPass
+//     }
+//   });
+
+//   app.post('/forgot-password', (req, res) => {
+//     const { email } = req.body;
+  
+//     // Generate a unique reset token
+//     const resetToken = crypto.randomBytes(20).toString('hex');
+    
+//     // Save the token to the user's document in the database
+//     studentModel.findOneAndUpdate(
+//       { email },
+//       { resetToken, resetTokenExpiry: Date.now() + 3600000 }, // Token expires in 1 hour
+//       { new: true }
+//     ).then(user => {
+//       if (!user) {
+//         return res.status(404).json({ message: 'User not found' });
+//       }
+  
+//       // Send email with password reset link
+//       const resetLink = `http://localhost:3002/reset-password/${resetToken}`;
+//       const mailOptions = {
+//         from: 'dudhabhatevaibhav@gmail.com',
+//         to: email,
+//         subject: 'Password Reset Link',
+//         text: `Click on this link to reset your password: ${resetLink}`
+//       };
+  
+//       transporter.sendMail(mailOptions, (error, info) => {
+//         if (error) {
+//           console.log(error);
+//           return res.status(500).json({ message: 'Failed to send email' });
+//         }
+//         console.log('Email sent: ' + info.response);
+//         res.json({ message: 'Password reset link sent to your email' });
+//       });
+//     }).catch(err => res.status(500).json(err));
+//   });
+  
+
+//   app.post('/reset-password/:token', (req, res) => {
+//     const { token } = req.params;
+//     const { newPassword } = req.body;
+  
+//     studentModel.findOneAndUpdate(
+//       { resetToken: token, resetTokenExpiry: { $gt: Date.now() } },
+//       { password: newPassword, resetToken: null, resetTokenExpiry: null },
+//       { new: true }
+//     ).then(user => {
+//       if (!user) {
+//         return res.status(400).json({ message: 'Invalid or expired token' });
+//       }
+//       res.json({ message: 'Password reset successfully' });
+//     }).catch(err => res.status(500).json(err));
+//   });
 
 app.post('/register',(req,res)=>{
     const {name,email,password} = req.body;
@@ -97,6 +204,12 @@ app.get('/dashboard',verifyuser,(req,res)=>{
     return res.json({valid:true,message:"authorized"})
 })
 
-app.listen(3001 ,()=>{
+app.get('/allproducts',(req,res)=>{
+    productModel.find({})
+        .then(products => res.json(products))
+        .catch(err => res.json(err));
+})
+
+app.listen(3002 ,()=>{
     console.log("server is running");
 })

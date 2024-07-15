@@ -11,7 +11,7 @@ const Login = () => {
     axios.defaults.withCredentials = true
     const handleSubmit = (e) =>{
       e.preventDefault();
-      axios.post('http://localhost:3001/login',{email,password})
+      axios.post('http://localhost:3002/login',{email,password})
       // .then(res=>console.log(res.data))
       .then(res =>{
         if(res.data.Login){
@@ -22,6 +22,18 @@ const Login = () => {
       })
       .catch(err =>console.log(err))
     }
+
+    const handleForgotPassword = () => {
+      axios.post('http://localhost:3002/forgotPassword', { email })
+        .then(res => {
+          alert(res.data.status); // Show success message to user
+          // alert(res.status)
+        })
+        .catch(err => {
+          console.error('Error sending reset password email:', err);
+          alert('Failed to send reset password email');
+        });
+    };
 
   return (
     <div className='d-flex justify-content-center align-items-center bg-secondary registerCont'>
@@ -45,6 +57,7 @@ const Login = () => {
           </button>
         </form>
         <p>Don't have acccount?</p>
+        <p className='ForgotPassword' onClick={handleForgotPassword}>forgot password</p>
         <button className='btn btn-default border w-100 bg-light rounded-0 text-decoration-none' type="button">
           Register
         </button>
@@ -54,4 +67,4 @@ const Login = () => {
   )
 }
 
-export default Login
+export default Login;

@@ -6,13 +6,16 @@ import cookieParser from "cookie-parser";
 import studentModel from "./model/studentModel.js"
 import productModel from "./model/productModel.js";
 import nodemailer from 'nodemailer';
-import crypto from 'crypto'
+import crypto, { verify } from 'crypto';
+import bcrypt from 'bcrypt';
 
 const jwt_secret = 'jsknkjfdkjshdkfjhs'
 
 const app = express();
 app.use(cookieParser())
 app.use(express.json())
+app.set("view engine",'ejs')
+app.use(express.urlencoded({extended:false}));
 app.use(cors(
     {
         origin:['http://localhost:5173'],
@@ -64,13 +67,42 @@ app.get("/resetPassword/:id/:token",async(req,res)=>{
         const secret = jwt_secret + olduser.password;
         try {
             const verify = jwt.verify(token,secret)
-            res.send("verified")
+            res.render('index',{email:verify.email,status:'Not verified'})
+            // res.send("verified")
         } catch (error) {
+            console.log(error)
             res.send('not Verified')
         }
     // res.send('done')
 })
+app.post("/resetPassword/:id/:token", async (req, res) => {
+    const { id, token } = req.params;
+    const { password } = req.body;
 
+    try {
+        const oldUser = await studentModel.findOne({ _id: id });
+        if (!oldUser) {
+            return res.status(404).json({ status: "user not found" });
+        }
+        const secret = jwt_secret + oldUser.password;
+        jwt.verify(token, secret, async (err, decoded) => {
+            if (err) {
+                return res.status(401).json({ status: "token verification failed" });
+            }
+
+            await studentModel.updateOne(
+                { _id: id },
+                { $set: { password: password } }  
+            );
+
+            // res.json({ status: "password updated" });
+            res.render("index",{ email:verify.email,status:'verified'})
+        });
+    } catch (error) {
+        console.error("Error resetting password:", error);
+        res.status(500).send("Internal Server Error");
+    }
+});
 // const transporter = nodemailer.createTransport({
 //     service: 'gmail',
 //     auth: {

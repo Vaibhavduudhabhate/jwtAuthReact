@@ -1,7 +1,4 @@
-// const mongoose = require('mongoose');
 import mongoose from "mongoose";
-// import 
-
 
 const userSchema = new mongoose.Schema({
     name:{
@@ -22,9 +19,5 @@ const userSchema = new mongoose.Schema({
     },
 },{timestamps :true})
 
-
-
-
 const studentModel = mongoose.model('register',userSchema)
-// module.exports = studentModel;
 export default studentModel

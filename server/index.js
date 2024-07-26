@@ -6,8 +6,8 @@ import cookieParser from "cookie-parser";
 import studentModel from "./model/studentModel.js"
 import productModel from "./model/productModel.js";
 import nodemailer from 'nodemailer';
-import crypto, { verify } from 'crypto';
-import bcrypt from 'bcrypt';
+// import crypto, { verify } from 'crypto';
+// import bcrypt from 'bcrypt';
 
 const jwt_secret = 'jsknkjfdkjshdkfjhs'
 
@@ -22,16 +22,6 @@ app.use(cors(
         credentials:true
     }
 ));
-
-
-async function connectMongoDb(url){
-    return mongoose.connect(url)
-}
-connectMongoDb('mongodb+srv://admin:admin1234@cluster0.w3huoar.mongodb.net/practiceDatabase').then(()=>console.log("mongodb connected"))
-
-export default{
-    connectMongoDb,
-}
 
 
 const emailUser = process.env.EMAIL_USER;
@@ -50,6 +40,29 @@ app.post('/forgotPassword',async(req,res)=>{
         const token = jwt.sign({email : olduser.email ,id:olduser._id},secret,{expiresIn : '5m'});
         const link = `http://localhost:3002/resetPassword/${olduser._id}/${token}`;
         console.log('link',link)
+        var transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: 'dudhabhatevaibhav@gmail.com',
+              pass: 'uhmidniafrsfspqj'
+            }
+          });
+          
+          var mailOptions = {
+            from: emailUser,
+            to:email,
+            subject: 'Sending Email using Node.js',
+            // text: `${link}`,
+            html: `<p>Click this Link  <a href="${link}">here to forgot password </a> to visit the link.</p>`,
+          };
+          
+          transporter.sendMail(mailOptions, function(error, info){
+            if (error) {
+              console.log(error);
+            } else {
+              console.log('Email sent: ' + info.response);
+            }
+          });
         res.send(link)
     } catch (error) {
         console.log(error)
@@ -73,7 +86,6 @@ app.get("/resetPassword/:id/:token",async(req,res)=>{
             console.log(error)
             res.send('not Verified')
         }
-    // res.send('done')
 })
 app.post("/resetPassword/:id/:token", async (req, res) => {
     const { id, token } = req.params;
@@ -95,7 +107,6 @@ app.post("/resetPassword/:id/:token", async (req, res) => {
                 { $set: { password: password } }  
             );
 
-            // res.json({ status: "password updated" });
             res.render("index",{ email:verify.email,status:'verified'})
         });
     } catch (error) {
@@ -103,13 +114,7 @@ app.post("/resetPassword/:id/:token", async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
-// const transporter = nodemailer.createTransport({
-//     service: 'gmail',
-//     auth: {
-//       user: emailUser,
-//       pass: emailPass
-//     }
-//   });
+
 
 //   app.post('/forgot-password', (req, res) => {
 //     const { email } = req.body;
@@ -242,6 +247,16 @@ app.get('/allproducts',(req,res)=>{
         .catch(err => res.json(err));
 })
 
-app.listen(3002 ,()=>{
-    console.log("server is running");
+
+async function connectMongoDb(url){
+    return mongoose.connect(url)
+}
+connectMongoDb('mongodb+srv://admin:admin1234@cluster0.w3huoar.mongodb.net/practiceDatabase').then(()=>console.log("mongodb connected"))
+
+export default{
+    connectMongoDb,
+}
+
+app.listen('3002' ,()=>{
+    console.log("server is running ");
 })

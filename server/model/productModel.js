@@ -2,9 +2,13 @@
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({
-    name: {
+    userName: {
         type: String,
         required: [true, 'Please enter a product name']
+    },
+    description:{
+        type: String,
+        required: [true, 'Please enter description']
     },
     image: {
         type: String,
@@ -12,6 +16,6 @@ const productSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-const productModel = mongoose.model('Product', productSchema);
+const productModel = mongoose.model('DummyProduct', productSchema);
 
 export default productModel;

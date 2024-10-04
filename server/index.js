@@ -6,6 +6,9 @@ import cookieParser from "cookie-parser";
 import studentModel from "./model/studentModel.js"
 import productModel from "./model/productModel.js";
 import nodemailer from 'nodemailer';
+import multer from "multer";
+import fs from "fs";
+import path from "path";
 // import crypto, { verify } from 'crypto';
 // import bcrypt from 'bcrypt';
 
@@ -16,6 +19,7 @@ app.use(cookieParser())
 app.use(express.json())
 app.set("view engine",'ejs')
 app.use(express.urlencoded({extended:false}));
+app.use('/uploads', express.static('uploads'));
 app.use(cors(
     {
         origin:['http://localhost:5173'],
@@ -23,9 +27,41 @@ app.use(cors(
     }
 ));
 
-
+// const upload = multer({dest:"uploads/"})
 const emailUser = process.env.EMAIL_USER;
 const emailPass = process.env.EMAIL_PASS;
+
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      // Specify the directory to store images
+      cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+      // Specify the file name (appending a timestamp to prevent name collisions)
+      cb(null, Date.now() + path.extname(file.originalname));
+    },
+  });
+  
+//   // Initialize multer with file size limits and accepted file types
+  const upload = multer({
+    storage:storage
+    // ,
+    // limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB size limit
+    // fileFilter: (req, file, cb) => {
+    //   const filetypes = /jpeg|jpg|png|gif/;
+    //   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    //   const mimetype = filetypes.test(file.mimetype);
+  
+    //   if (mimetype && extname) {
+    //     return cb(null, true);
+    //   } else {
+    //     return cb(new Error('Invalid file type. Only images are allowed.'));
+    //   }
+    // },
+  });
+  
+  // Middleware to serve static files (images)
 
 app.post('/forgotPassword',async(req,res)=>{
     const email = req.body.email;
@@ -241,12 +277,76 @@ app.get('/dashboard',verifyuser,(req,res)=>{
     return res.json({valid:true,message:"authorized"})
 })
 
-app.get('/allproducts',(req,res)=>{
-    productModel.find({})
-        .then(products => res.json(products))
-        .catch(err => res.json(err));
-})
 
+app.get('/allproducts', (req, res) => {
+    const assetsPath = path.resolve('uploads');
+
+    productModel.find({})
+        .then(products => {
+            const productsWithImages = products.map(product => {
+                const imagePath = path.join(assetsPath, product.image.replace('/uploads/', '')); 
+                let image = '';
+
+                try {
+                    const imageBuffer = fs.readFileSync(imagePath); 
+                    image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;  
+                } catch (error) {
+                    console.error('Error reading image:', error);
+                }
+                return {
+                    ...product.toObject(),
+                    image: image  
+                };
+            });
+
+            // Send the products with Base64 images
+            res.json(productsWithImages);
+        })
+        .catch(err => res.status(500).json({ error: err.message }));
+});
+// app.post('/add',upload.single('image'),(req,res)=>{
+//     console.log(req)
+//     const {userName,description} = req.body;
+//     const imagePath = `/uploads/${req.body.image}`;
+//     // const image = req.file ? `/uploads/${req.file.filename}` : ''; 
+//     productModel.create({userName,description,image:imagePath})
+//     .then(user=>res.json(user))
+//     .catch(err => res.json(err))
+// })
+// app.get('/viewall',(req,res)=>{
+//     productModel.find({})
+//         .then(products => res.json(products))
+//         .catch(err => res.json(err));
+// })
+// app.get('/view/:id', (req, res) => {
+//     const id = req.params.id;
+
+//     // Check if the ID is valid
+//     if (!mongoose.Types.ObjectId.isValid(id)) {
+//         return res.status(400).json({ message: "Invalid ID format" });
+//     }
+
+//     productModel.findById(id)
+//         .then(user => {
+//             if (!user) {
+//                 return res.status(404).json({ message: "Product not found" });
+//             }
+//             res.json(user);
+//         })
+//         .catch(err => res.status(500).json({ error: err.message }));
+// });
+
+// const multer =require('multer');
+// const upload = multer({dest:"uploads/"});
+app.post('/imagewithadd',upload.single("image"),async(req,res)=>{
+        console.log(req.body)
+        const {userName,description} = req.body;
+    const imagePath = req.file.filename;
+    // const image = req.file ? `/uploads/${req.file.filename}` : ''; 
+    productModel.create({userName,description,image:imagePath})
+    .then(user=>res.json(user))
+    .catch(err => res.json(err))
+})
 
 async function connectMongoDb(url){
     return mongoose.connect(url)
@@ -258,5 +358,5 @@ export default{
 }
 
 app.listen('3002' ,()=>{
-    console.log("server is running ");
+    console.log(`server is running on port3002 `);
 })

@@ -5,7 +5,7 @@ export const Home = () => {
   return (
     <>
       <div>
-        Home page
+        {/* Home page */}
         <Products />
       </div>
     </>

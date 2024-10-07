@@ -7,6 +7,8 @@ import Login from './Login'
 import Dashboard from './Dashboard'
 import AddUsers from './AddUsers'
 import Viewusers from './Viewusers'
+import ProductDetails from './DetailsPage'
+import UpdateProduct from './UpdateProduct'
 
 function App() {
 
@@ -19,6 +21,8 @@ function App() {
         <Route path='/dashboard' element={<Dashboard/> }></Route>
         <Route path='/addusers' element={<AddUsers/> }></Route>
         <Route path='/viewusers' element={<Viewusers/> }></Route>
+        <Route path="/view/:id" element={<ProductDetails />} />
+        <Route path="/update/:id" element={<UpdateProduct />} />
       </Routes>
     </BrowserRouter>
   )

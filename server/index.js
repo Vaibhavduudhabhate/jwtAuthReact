@@ -278,75 +278,136 @@ app.get('/dashboard',verifyuser,(req,res)=>{
 })
 
 
-app.get('/allproducts', (req, res) => {
-    const assetsPath = path.resolve('uploads');
+    app.get('/allproducts', (req, res) => {
+        const assetsPath = path.resolve('uploads');
 
-    productModel.find({})
-        .then(products => {
-            const productsWithImages = products.map(product => {
-                const imagePath = path.join(assetsPath, product.image.replace('/uploads/', '')); 
+        productModel.find({})
+            .then(products => {
+                const productsWithImages = products.map(product => {
+                    const imagePath = path.join(assetsPath, product.image.replace('/uploads/', '')); 
+                    let image = '';
+
+                    try {
+                        const imageBuffer = fs.readFileSync(imagePath); 
+                        image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;  
+                    } catch (error) {
+                        console.error('Error reading image:', error);
+                    }
+                    return {
+                        ...product.toObject(),
+                        image: image  
+                    };
+                });
+
+                res.json(productsWithImages);
+            })
+            .catch(err => res.status(500).json({ error: err.message }));
+    });
+    // app.post('/add',upload.single('image'),(req,res)=>{
+    //     console.log(req)
+    //     const {userName,description} = req.body;
+    //     const imagePath = `/uploads/${req.body.image}`;
+    //     // const image = req.file ? `/uploads/${req.file.filename}` : ''; 
+    //     productModel.create({userName,description,image:imagePath})
+    //     .then(user=>res.json(user))
+    //     .catch(err => res.json(err))
+    // })
+    // app.get('/viewall',(req,res)=>{
+    //     productModel.find({})
+    //         .then(products => res.json(products))
+    //         .catch(err => res.json(err));
+    // })
+    app.get('/view/:id', (req, res) => {
+        const id = req.params.id;
+    
+        // Check if the ID is valid
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid ID format" });
+        }
+    
+        productModel.findById(id)
+            .then(product => {
+                if (!product) {
+                    return res.status(404).json({ message: "Product not found" });
+                }
+                
+                // Get the image path
+                const assetsPath = path.resolve('uploads');
+                const imagePath = path.join(assetsPath, product.image.replace('/uploads/', ''));
                 let image = '';
-
+    
                 try {
-                    const imageBuffer = fs.readFileSync(imagePath); 
-                    image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;  
+                    const imageBuffer = fs.readFileSync(imagePath);
+                    image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
                 } catch (error) {
                     console.error('Error reading image:', error);
                 }
-                return {
+    
+                // Return product with image as Base64
+                res.json({
                     ...product.toObject(),
-                    image: image  
-                };
-            });
+                    image: image
+                });
+            })
+            .catch(err => res.status(500).json({ error: err.message }));
+    });
+    
 
-            // Send the products with Base64 images
-            res.json(productsWithImages);
-        })
-        .catch(err => res.status(500).json({ error: err.message }));
-});
-// app.post('/add',upload.single('image'),(req,res)=>{
-//     console.log(req)
-//     const {userName,description} = req.body;
-//     const imagePath = `/uploads/${req.body.image}`;
-//     // const image = req.file ? `/uploads/${req.file.filename}` : ''; 
-//     productModel.create({userName,description,image:imagePath})
-//     .then(user=>res.json(user))
-//     .catch(err => res.json(err))
-// })
-// app.get('/viewall',(req,res)=>{
-//     productModel.find({})
-//         .then(products => res.json(products))
-//         .catch(err => res.json(err));
-// })
-// app.get('/view/:id', (req, res) => {
-//     const id = req.params.id;
+    // const multer =require('multer');
+    // const upload = multer({dest:"uploads/"});
+    app.post('/imagewithadd',upload.single("image"),async(req,res)=>{
+            console.log(req.body)
+            const {userName,description} = req.body;
+        const imagePath = req.file.filename;
+        // const image = req.file ? `/uploads/${req.file.filename}` : ''; 
+        productModel.create({userName,description,image:imagePath})
+        .then(user=>res.json(user))
+        .catch(err => res.json(err))
+    })
 
-//     // Check if the ID is valid
-//     if (!mongoose.Types.ObjectId.isValid(id)) {
-//         return res.status(400).json({ message: "Invalid ID format" });
-//     }
-
-//     productModel.findById(id)
-//         .then(user => {
-//             if (!user) {
-//                 return res.status(404).json({ message: "Product not found" });
-//             }
-//             res.json(user);
-//         })
-//         .catch(err => res.status(500).json({ error: err.message }));
-// });
-
-// const multer =require('multer');
-// const upload = multer({dest:"uploads/"});
-app.post('/imagewithadd',upload.single("image"),async(req,res)=>{
-        console.log(req.body)
-        const {userName,description} = req.body;
-    const imagePath = req.file.filename;
-    // const image = req.file ? `/uploads/${req.file.filename}` : ''; 
-    productModel.create({userName,description,image:imagePath})
-    .then(user=>res.json(user))
-    .catch(err => res.json(err))
-})
+    app.delete('/delete/:id', (req, res) => {
+        const id = req.params.id;
+    
+        // Check if the ID is valid
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid ID format" });
+        }
+    
+        productModel.findByIdAndDelete(id)
+            .then(result => {
+                if (!result) {
+                    return res.status(404).json({ message: "Product not found" });
+                }
+                res.json({ message: "Product deleted successfully" });
+            })
+            .catch(err => res.status(500).json({ error: err.message }));
+    });
+    
+    // PUT /update/:id
+    app.put('/update/:id', upload.single('image'), (req, res) => {
+        const id = req.params.id;
+    
+        // Check if the ID is valid
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid ID format" });
+        }
+    
+        const { userName, description } = req.body;
+        const updateData = { userName, description };
+    
+        if (req.file) {
+            updateData.image = req.file.filename; // Update image if uploaded
+        }
+    
+        productModel.findByIdAndUpdate(id, updateData, { new: true })
+            .then(updatedProduct => {
+                if (!updatedProduct) {
+                    return res.status(404).json({ message: "Product not found" });
+                }
+                res.json(updatedProduct);
+            })
+            .catch(err => res.status(500).json({ error: err.message }));
+    });
 
 async function connectMongoDb(url){
     return mongoose.connect(url)

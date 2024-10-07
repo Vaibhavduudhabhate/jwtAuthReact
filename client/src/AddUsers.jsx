@@ -1,23 +1,44 @@
 import axios from 'axios';
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom';
 
 const AddUsers = () => {
 
     const [userName ,setUserName] =useState();
     const [description ,setDescription] =useState();
     const [image ,setImage] =useState();
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
     
     axios.defaults.withCredentials = true
     const handleSubmit = async(e) =>{
       e.preventDefault();
-      await axios.post('http://localhost:3002/imagewithadd',{userName,description,image},
-        {headers:{"Content-Type":"multipart/form-data"}}
-    )
-    //   .then(res=>console.log(res.data))
-      .then(res =>{
-        console.log(res.data)
-      })
-      .catch(err =>console.log(err))
+      setLoading(true);
+
+      try {
+        const res = await axios.post('http://localhost:3002/imagewithadd', {userName,description,image}, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        console.log(res.data);
+        navigate('/'); // Redirect to Products page
+    } catch (err) {
+        console.error(err);
+    } finally {
+        setLoading(false);
+    }
+    //   await axios.post('http://localhost:3002/imagewithadd',{userName,description,image},
+    //     {headers:{"Content-Type":"multipart/form-data"}}
+    // )
+    // //   .then(res=>console.log(res.data))
+    //   .then(res =>{
+    //     console.log(res.data)
+    //   })
+    //   .catch(err =>console.log(err))
+    //   .finally{
+    //       setLoading(false);
+
+    //   }
+    //   )
     }
 
     const onInputChange =(e) =>{
@@ -44,7 +65,7 @@ const AddUsers = () => {
                             // (e)=>setimage(e.target.value)
                             } />
                     </div>
-                    <button type="submit" className="btn btn-primary">Submit</button>
+                    <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Loading...' : 'Submit'}</button>
                 </form>
             </div>
         </div>

@@ -34,16 +34,13 @@ const emailPass = process.env.EMAIL_PASS;
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      // Specify the directory to store images
       cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
-      // Specify the file name (appending a timestamp to prevent name collisions)
       cb(null, Date.now() + path.extname(file.originalname));
     },
   });
   
-//   // Initialize multer with file size limits and accepted file types
   const upload = multer({
     storage:storage
     // ,
@@ -61,7 +58,6 @@ const storage = multer.diskStorage({
     // },
   });
   
-  // Middleware to serve static files (images)
 
 app.post('/forgotPassword',async(req,res)=>{
     const email = req.body.email;
@@ -303,20 +299,6 @@ app.get('/dashboard',verifyuser,(req,res)=>{
             })
             .catch(err => res.status(500).json({ error: err.message }));
     });
-    // app.post('/add',upload.single('image'),(req,res)=>{
-    //     console.log(req)
-    //     const {userName,description} = req.body;
-    //     const imagePath = `/uploads/${req.body.image}`;
-    //     // const image = req.file ? `/uploads/${req.file.filename}` : ''; 
-    //     productModel.create({userName,description,image:imagePath})
-    //     .then(user=>res.json(user))
-    //     .catch(err => res.json(err))
-    // })
-    // app.get('/viewall',(req,res)=>{
-    //     productModel.find({})
-    //         .then(products => res.json(products))
-    //         .catch(err => res.json(err));
-    // })
     app.get('/view/:id', (req, res) => {
         const id = req.params.id;
     
@@ -353,8 +335,6 @@ app.get('/dashboard',verifyuser,(req,res)=>{
     });
     
 
-    // const multer =require('multer');
-    // const upload = multer({dest:"uploads/"});
     app.post('/imagewithadd',upload.single("image"),async(req,res)=>{
             console.log(req.body)
             const {userName,description} = req.body;
@@ -367,8 +347,6 @@ app.get('/dashboard',verifyuser,(req,res)=>{
 
     app.delete('/delete/:id', (req, res) => {
         const id = req.params.id;
-    
-        // Check if the ID is valid
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: "Invalid ID format" });
         }
@@ -383,11 +361,8 @@ app.get('/dashboard',verifyuser,(req,res)=>{
             .catch(err => res.status(500).json({ error: err.message }));
     });
     
-    // PUT /update/:id
     app.put('/update/:id', upload.single('image'), (req, res) => {
         const id = req.params.id;
-    
-        // Check if the ID is valid
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: "Invalid ID format" });
         }
@@ -396,7 +371,7 @@ app.get('/dashboard',verifyuser,(req,res)=>{
         const updateData = { userName, description };
     
         if (req.file) {
-            updateData.image = req.file.filename; // Update image if uploaded
+            updateData.image = req.file.filename;
         }
     
         productModel.findByIdAndUpdate(id, updateData, { new: true })

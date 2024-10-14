@@ -17,7 +17,7 @@ const Login = () => {
         if(res.data.Login){
             navigate('/dashboard')
         }else{
-            navigate('/')
+            navigate('/login')
         }
       })
       .catch(err =>console.log(err))

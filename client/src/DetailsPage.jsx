@@ -39,7 +39,7 @@ const ProductDetails = () => {
     };
 
     const handleBack = () =>{
-        navigate('/');
+        navigate('/dashboard');
     }
 
     if (loading) return <div><Loading /></div>;

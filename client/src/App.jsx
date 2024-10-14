@@ -15,10 +15,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path='/' element={<Home />}></Route>
+        <Route path='/' element={<Login />}></Route>
         <Route path='/register' element={<Registration/> }></Route>
         <Route path='/login' element={<Login/> }></Route>
-        <Route path='/dashboard' element={<Dashboard/> }></Route>
+        <Route path='/dashboard' element={<Home/> }></Route>
         <Route path='/addusers' element={<AddUsers/> }></Route>
         <Route path='/viewusers' element={<Viewusers/> }></Route>
         <Route path="/view/:id" element={<ProductDetails />} />

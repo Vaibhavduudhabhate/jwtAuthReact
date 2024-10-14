@@ -27,7 +27,7 @@ const Products = () => {
 
     if (loading) return <div><Loading /></div>;
     if (error) return <div>Error loading products: {error.message}</div>;
-
+    console.log("products",products)
     return (
         <div className='text-center'>
         <h1>Anime</h1>

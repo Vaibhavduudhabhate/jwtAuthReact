@@ -218,7 +218,7 @@ app.post('/login',(req,res)=>{
                     'jwt-access-token-secret-key',{expiresIn:'1m'});
                 const refreshToken = jwt.sign({email : email},
                     'jwt-refresh-token-secret-key',{expiresIn:'5m'});    
-                res.cookie('accessToken',accessToken ,{maxAge:60000});
+                res.cookie('accessToken',accessToken ,{ maxAge: 60000, httpOnly: true, secure: false, sameSite: 'Strict' });
                 res.cookie('refreshToken',refreshToken ,
                     {maxAge:30000,httpOnly:true,secure:true,sameSite:'strict'})
                 return res.json({Login : true})
@@ -231,74 +231,125 @@ app.post('/login',(req,res)=>{
     .catch(err => res.json(err))
 })
 
-const verifyuser = (req,res,next) =>{
+const verifyuser = async(req,res,next) =>{
+    console.log(req.cookies)
     const accessToken = req.cookies.accessToken;
+    console.log(accessToken)
     if(!accessToken){
-        if(renewToken(req,res)){
-            next()
+        try {
+            await renewToken(req, res);
+            return next();
+        } catch (error) {
+            return res.json(error);
         }
     }else{
         jwt.verify(accessToken,'jwt-access-token-secret-key',(err,decoded)=>{
             if(err){
                 return res.json({valid:false,message:'Invalid Token'})
             }else{
-                req.email = decoded.email
-                next()
+                req.email = decoded.email;
+                return next();
             }
         })
     }
 }
 
-const renewToken = (req,res) =>{
-    const refreshToken = req.cookies.refreshToken;
-    let exit = false
-    if(!refreshToken){
-        return res.json({valid:false,message:"no refresh token"})
-    }else{
-        jwt.verify(refreshToken,'jwt-refresh-token-secret-key',(err,decoded)=>{
-            if(err){
-                return res.json({valid:false,message:'Invalid refresh Token'})
-            }else{
-                const accessToken = jwt.sign({email : decoded.email},
-                    'jwt-access-token-secret-key',{expiresIn:'1m'});
-                res.cookie('accessToken',accessToken ,{maxAge:60000});
-                    exit = true;
+// const renewToken = (req,res) =>{
+//     const refreshToken = req.cookies.refreshToken;
+//     console.log("refreshToken",refreshToken)
+//     let exit = false
+//     if(!refreshToken){
+//         return res.json({valid:false,message:"no refresh token"})
+//     }else{
+//         jwt.verify(refreshToken,'jwt-refresh-token-secret-key',(err,decoded)=>{
+//             if(err){
+//                 return res.json({valid:false,message:'Invalid refresh Token'})
+//             }else{
+//                 const accessToken = jwt.sign({email : decoded.email},
+//                     'jwt-access-token-secret-key',{expiresIn:'1m'});
+//                 res.cookie('accessToken',accessToken ,{maxAge:60000});
+//                     exit = true;
+//             }
+//         })
+//     }
+//     return exit;
+// }
+
+const renewToken = (req, res) => {
+    return new Promise((resolve, reject) => {
+        const refreshToken = req.cookies.refreshToken;
+        if (!refreshToken) {
+            return reject({ valid: false, message: "no refresh token" });
+        }
+        jwt.verify(refreshToken, 'jwt-refresh-token-secret-key', (err, decoded) => {
+            if (err) {
+                return reject({ valid: false, message: 'Invalid refresh Token' });
+            } else {
+                const accessToken = jwt.sign({ email: decoded.email }, 'jwt-access-token-secret-key', { expiresIn: '1m' });
+                res.cookie('accessToken', accessToken, { maxAge: 60000, httpOnly: true, secure: false, sameSite: 'Strict' });
+                return resolve(true);
             }
-        })
-    }
-    return exit;
-}
+        });
+    });
+};
 
 app.get('/dashboard',verifyuser,(req,res)=>{
     return res.json({valid:true,message:"authorized"})
 })
+app.get('/allproducts', async (req, res) => {
+    const assetsPath = path.resolve('uploads');
+
+    try {
+        const products = await productModel.find({});
+        const productsWithImages = await Promise.all(products.map(async product => {
+            const imagePath = path.join(assetsPath, product.image.replace('/uploads/', ''));
+            let image = '';
+
+            try {
+                const imageBuffer = await fs.promises.readFile(imagePath);
+                image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+            } catch (error) {
+                console.error('Error reading image:', error);
+            }
+            return {
+                ...product.toObject(),
+                image: image
+            };
+        }));
+
+        res.json(productsWithImages);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 
-    app.get('/allproducts', (req, res) => {
-        const assetsPath = path.resolve('uploads');
+    // app.get('/allproducts',verifyuser, (req, res) => {
+    //     const assetsPath = path.resolve('uploads');
 
-        productModel.find({})
-            .then(products => {
-                const productsWithImages = products.map(product => {
-                    const imagePath = path.join(assetsPath, product.image.replace('/uploads/', '')); 
-                    let image = '';
+    //     productModel.find({})
+    //         .then(products => {
+    //             const productsWithImages = products.map(product => {
+    //                 const imagePath = path.join(assetsPath, product.image.replace('/uploads/', '')); 
+    //                 let image = '';
 
-                    try {
-                        const imageBuffer = fs.readFileSync(imagePath); 
-                        image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;  
-                    } catch (error) {
-                        console.error('Error reading image:', error);
-                    }
-                    return {
-                        ...product.toObject(),
-                        image: image  
-                    };
-                });
+    //                 try {
+    //                     const imageBuffer = fs.readFileSync(imagePath); 
+    //                     image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;  
+    //                 } catch (error) {
+    //                     console.error('Error reading image:', error);
+    //                 }
+    //                 return {
+    //                     ...product.toObject(),
+    //                     image: image  
+    //                 };
+    //             });
 
-                res.json(productsWithImages);
-            })
-            .catch(err => res.status(500).json({ error: err.message }));
-    });
+    //             res.json(productsWithImages);
+                
+    //         })
+    //         .catch(err => res.status(500).json({ error: err.message }));
+    // });
     app.get('/view/:id', (req, res) => {
         const id = req.params.id;
     

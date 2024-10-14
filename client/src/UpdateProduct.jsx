@@ -30,8 +30,6 @@ const UpdateProduct = () => {
         const file = e.target.files[0];
         setSelectedFile(file ? file.name : null); // Update the filename
     };
-
-    console.log(product)
     const handleUpdate = async (e) => {
         e.preventDefault();
         const formData = new FormData();
@@ -48,7 +46,7 @@ const UpdateProduct = () => {
                     'Content-Type': 'multipart/form-data'
                 }
             });
-            navigate(`/view/${id}`); // Redirect to product details after update
+            navigate(`/view/${id}`);
         } catch (err) {
             setError(err);
         }
